@@ -6,40 +6,49 @@ from anvil.files import data_files
 import anvil.server
 import sqlite3
 
-@anvil.server.callable
-def verbinde_db():
-    conn = sqlite3.connect('gefaengnis.db')
-    conn.row_factory = sqlite3.Row
-    return conn
 
 @anvil.server.callable
-def get_gefaengnisse():
-  conn = verbinde_db()
+def get_gefaengnisse(rows="*"):
+  conn = sqlite3.connect(data_files['gefaengnis.db'])
   cursor = conn.cursor()
+  res = list(cursor.execute("SELECT Name, GID FROM Gefaengnis"))
+  conn.close()
+  return res
 
-  cursor.execute("SELECT * FROM Gefaengnis")
-  res = [dict(row) for row in cursor.fetchall()]
+@anvil.server.callable
+def get_direktor(gefaengnis_id):
+  conn = sqlite3.connect(data_files['gefaengnis.db'])
+  cursor = conn.cursor()
+  res = list(cursor.execute("""SELECT Direktor FROM Verwaltung WHERE GID = ?""",(gefaengnis_id)))
+  print(res)
+  conn.close()
+  return res
+
+@anvil.server.callable
+def get_freiezelle(gefaengnis_id):
+  conn = sqlite3.connect(data_files['gefaengnis.db'])
+  cursor = conn.cursor()
+  res = list(cursor.execute("""SELECT Freie_Zellen FROM Verwaltung WHERE GID = ?""",(gefaengnis_id)))
+  print(res)
   conn.close()
   return res
 
 @anvil.server.callable
 def get_zelle(gefaengnis_id):
-  conn = verbinde_db()
+  conn = sqlite3.connect(data_files['gefaengnis.db'])
   cursor = conn.cursor()
-
-  cursor.execute("""SELECT Zellennummer, Belegt, Aktuelle_Belegung FROM Zelle WHERE GID = ?""",(gefaengnis_id))
-  res = [dict(row) for row in cursor.fetchall()]
+  res = list(cursor.execute("""SELECT Zellennummer, Aktuelle_Belegung FROM Zelle WHERE GID = ?""",(gefaengnis_id)))
+  print(res)
   conn.close()
   return res
 
 def get_haeftlinge(zelle_id):
-    conn = verbinde_db()
+    conn = sqlite3.connect(data_files['gefaengnis.db'])
     cursor = conn.cursor()
-    cursor.execute("""
+    res = list(cursor.execute("""
         SELECT H.Name, H.Haftdauer, B.Einzug, B.Auszug
         FROM Haeftling H
         JOIN Bewohntzeit B ON H.HID = B.HID
-        WHERE B.ZID = ?""", (zelle_id,))
-    res = [dict(row) for row in cursor.fetchall()]
+        WHERE B.ZID = ?""", (zelle_id)))
     conn.close()
     return res
